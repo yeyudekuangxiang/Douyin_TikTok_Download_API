@@ -7,14 +7,14 @@ import yaml
 from fastapi import APIRouter, Request, Query, HTTPException  # 导入FastAPI组件
 from starlette.responses import FileResponse
 
-from app.api.models.APIResponseModel import ErrorResponseModel  # 导入响应模型
+from app.api.models.APIResponseModel import ErrorResponseModel,ResponseModel  # 导入响应模型
 from crawlers.hybrid.hybrid_crawler import HybridCrawler  # 导入混合数据爬虫
 
 router = APIRouter()
 HybridCrawler = HybridCrawler()
 
 # 读取上级再上级目录的配置文件
-config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 'config.yaml')
+config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),'config', 'config.yaml')
 with open(config_path, 'r', encoding='utf-8') as file:
     config = yaml.safe_load(file)
 
@@ -41,6 +41,7 @@ async def fetch_data_stream(url: str, request:Request , headers: dict = None, fi
             async with aiofiles.open(file_path, 'wb') as out_file:
                 async for chunk in response.aiter_bytes():
                     if await request.is_disconnected():
+                        
                         print("客户端断开连接，清理未完成的文件")
                         await out_file.close()
                         os.remove(file_path)
@@ -181,12 +182,28 @@ async def download_file_hybrid(request: Request,
         code = 400
         return ErrorResponseModel(code=code, message=str(e), router=request.url.path, params=dict(request.query_params))
 
+def utf8_slice(text, byte_length):
+    # 将字符串编码为UTF-8字节
+    encoded_bytes = text.encode('utf-8')
+
+    # 截取指定长度的字节
+    sliced_bytes = encoded_bytes[:byte_length]
+
+    # 尝试解码截取后的字节为UTF-8字符串
+    try:
+        decoded_string = sliced_bytes.decode('utf-8')
+    except UnicodeDecodeError:
+        # 如果解码失败，逐个字节去除直到成功解码
+        decoded_string = sliced_bytes.decode('utf-8', errors='ignore')
+
+    return decoded_string
 
 @router.get("/downloadserver", summary="在线下载抖音|TikTok视频/图片/Online download Douyin|TikTok video/image到服务器")
-async def download_file_hybrid(request: Request,
+async def download_file_hybrid_server(request: Request,
                                url: str = Query(
                                    example="https://www.douyin.com/video/7372484719365098803",
                                    description="视频或图片的URL地址，也支持抖音|TikTok的分享链接，例如：https://v.douyin.com/e4J8Q7A/"),
+                               name:str="",
                                prefix: bool = True,
                                with_watermark: bool = False):
     """
@@ -237,6 +254,9 @@ async def download_file_hybrid(request: Request,
     try:
         data_type = data.get('type')
         platform = data.get('platform')
+        print(data.get('author')['nickname'])
+        nickname = data.get('author')['nickname']
+        desc =  utf8_slice(data.get('desc'), 60)
         aweme_id = data.get('aweme_id')
         file_prefix = config.get("API").get("Download_File_Prefix") if prefix else ''
         download_path = os.path.join(config.get("API").get("Download_Path"), f"{platform}_{data_type}")
@@ -246,7 +266,7 @@ async def download_file_hybrid(request: Request,
 
         # 下载视频文件/Download video file
         if data_type == 'video':
-            file_name = f"{file_prefix}{platform}_{aweme_id}.mp4" if not with_watermark else f"{file_prefix}{platform}_{aweme_id}_watermark.mp4"
+            file_name = f"{file_prefix}{platform}_{nickname}_{desc}.mp4" if not with_watermark else f"{file_prefix}{platform}_{aweme_id}_watermark.mp4"
             url = data.get('video_data').get('nwm_video_url_HQ') if not with_watermark else data.get('video_data').get(
                 'wm_video_url_HQ')
             file_path = os.path.join(download_path, file_name)

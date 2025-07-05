@@ -37,5 +37,7 @@
 from app.main import Host_IP, Host_Port
 import uvicorn
 
+print("客户端断开连接，清理未完成的文件")
 if __name__ == '__main__':
+    print("客户端断开连接，清理未完成的文件")
     uvicorn.run('app.main:app', host=Host_IP, port=Host_Port, reload=True, log_level="info")
