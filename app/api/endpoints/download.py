@@ -40,13 +40,8 @@ async def fetch_data_stream(url: str, request:Request , headers: dict = None, fi
             # 流式保存文件
             async with aiofiles.open(file_path, 'wb') as out_file:
                 async for chunk in response.aiter_bytes():
-                    if await request.is_disconnected():
-                        
-                        print("客户端断开连接，清理未完成的文件")
-                        await out_file.close()
-                        os.remove(file_path)
-                        return False
                     await out_file.write(chunk)
+            out_file.close()
             return True
 
 @router.get("/download", summary="在线下载抖音|TikTok视频/图片/Online download Douyin|TikTok video/image")
