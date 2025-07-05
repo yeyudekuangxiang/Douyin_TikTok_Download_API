@@ -6,6 +6,10 @@ import yaml
 from pywebio.input import *
 from pywebio.output import *
 from pywebio_battery import put_video
+from pywebio import start_server
+from urllib.parse import urlencode
+from pywebio.session import run_async
+import requests
 
 from app.web.views.ViewsUtils import ViewsUtils
 
@@ -72,6 +76,22 @@ def error_do(reason: str, value: str) -> None:
         "- GitHub Issue: [Evil0ctal/Douyin_TikTok_Download_API](https://github.com/Evil0ctal/Douyin_TikTok_Download_API/issues)")
     put_html("<hr>")
 
+def download_file(url):
+    uuu = f"http://127.0.0.1:{config['API']['Host_Port']}{url}"
+    # 弹出提示框，表示正在下载中
+    popup('下载中...', content=put_text('文件已开始下载，可直接退出...'+url))
+
+    # 这里可以使用 AJAX 请求（例如，使用 requests 库）
+    # 直接发起请求，不需要等待返回
+    
+    response = requests.get(uuu)  # 替换为你的接口地址
+
+    # 你可以在这里处理返回的结果（如果需要）
+    if response.status_code == 200:
+        # 假设返回的是文件链接，可以给用户提示
+        popup('下载完成', content=put_text('文件已成功下载!'))
+    else:
+        popup('下载失败', content=put_text('发生错误，请重试!'))
 
 def parse_video():
     placeholder = ViewsUtils.t(
@@ -145,27 +165,33 @@ def parse_video():
         # 如果是视频/If it's video
         if url_type == ViewsUtils.t('视频', 'Video'):
             # 添加视频信息
-            wm_video_url_HQ = data.get('video_data').get('wm_video_url_HQ')
-            nwm_video_url_HQ = data.get('video_data').get('nwm_video_url_HQ')
-            if wm_video_url_HQ and nwm_video_url_HQ:
-                table_list.insert(4, [ViewsUtils.t('视频链接-水印', 'Video URL-Watermark'),
-                                      put_link(ViewsUtils.t('点击查看', 'Click to view'),
-                                               wm_video_url_HQ, new_window=True)])
-                table_list.insert(5, [ViewsUtils.t('视频链接-无水印', 'Video URL-No Watermark'),
-                                      put_link(ViewsUtils.t('点击查看', 'Click to view'),
-                                               nwm_video_url_HQ, new_window=True)])
-            table_list.insert(6, [ViewsUtils.t('视频下载-水印', 'Video Download-Watermark'),
-                                  put_link(ViewsUtils.t('点击下载', 'Click to download'),
-                                           f"/api/download?url={url}&prefix=true&with_watermark=true",
-                                           new_window=True)])
-            table_list.insert(7, [ViewsUtils.t('视频下载-无水印', 'Video Download-No-Watermark'),
-                                  put_link(ViewsUtils.t('点击下载', 'Click to download'),
-                                           f"/api/download?url={url}&prefix=true&with_watermark=false",
-                                           new_window=True)])
+           # wm_video_url_HQ = data.get('video_data').get('wm_video_url_HQ')
+            # nwm_video_url_HQ = data.get('video_data').get('nwm_video_url_HQ')
+            # if wm_video_url_HQ and nwm_video_url_HQ:
+             #    table_list.insert(4, [ViewsUtils.t('视频链接-水印', 'Video URL-Watermark'),
+             #                          put_link(ViewsUtils.t('点击查看', 'Click to view'),
+             #                                   wm_video_url_HQ, new_window=True)])
+             #    table_list.insert(5, [ViewsUtils.t('视频链接-无水印', 'Video URL-No Watermark'),
+             #                          put_link(ViewsUtils.t('点击查看', 'Click to view'),
+             #                                   nwm_video_url_HQ, new_window=True)])
+             #table_list.insert(6, [ViewsUtils.t('视频下载-水印', 'Video Download-Watermark'),
+            #                       put_link(ViewsUtils.t('点击下载', 'Click to download'),
+            #                                f"/api/download?url={url}&prefix=true&with_watermark=true",
+             #                               new_window=True)])
+            # table_list.insert(7, [ViewsUtils.t('视频下载-无水印', 'Video Download-No-Watermark'),
+              #                     put_link(ViewsUtils.t('点击下载', 'Click to download'),
+              #                              f"/api/download?url={url}&prefix=true&with_watermark=false",
+              #                              new_window=True)])
+            params = {
+                "url": url,
+                "prefix": "false",
+                "with_watermark": "false"
+            }
+            downUrl = f"/api/downloadserver?{urlencode(params)}"
+            
             table_list.insert(8, [ViewsUtils.t('下载到服务器', 'Video Download-to-Server'),
-                                  put_link(ViewsUtils.t('点击下载', 'Click to download'),
-                                           f"/api/downloadserver?url={url}&prefix=true&with_watermark=false",
-                                           new_window=True)])
+                                  put_button("点击下载", onclick=lambda: download_file(downUrl)),
+                                  ])
             # 添加视频信息
             table_list.insert(0, [
                 put_video(data.get('video_data').get('nwm_video_url_HQ'), poster=None, loop=True, width='50%')])
@@ -213,8 +239,6 @@ def parse_video():
         # 滚动至result
         scroll_to('result')
         # for循环结束，向网页输出成功提醒
-        put_success(ViewsUtils.t('解析完成啦 ♪(･ω･)ﾉ\n请查看以下统计信息，如果觉得有用的话请在GitHub上帮我点一个Star吧！',
-                                 'Parsing completed ♪(･ω･)ﾉ\nPlease check the following statistics, and if you think it\'s useful, please help me click a Star on GitHub!'))
         # 将成功，失败以及总数量显示出来并且显示为代码方便复制
         put_markdown(
             f'**{ViewsUtils.t("成功", "Success")}:** {success_count} **{ViewsUtils.t("失败", "Failed")}:** {failed_count} **{ViewsUtils.t("总数量", "Total")}:** {success_count + failed_count}')

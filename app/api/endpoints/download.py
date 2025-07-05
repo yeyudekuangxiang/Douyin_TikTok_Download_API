@@ -249,19 +249,18 @@ async def download_file_hybrid_server(request: Request,
     try:
         data_type = data.get('type')
         platform = data.get('platform')
-        print(data.get('author')['nickname'])
         nickname = data.get('author')['nickname']
         desc =  utf8_slice(data.get('desc'), 60)
         aweme_id = data.get('aweme_id')
         file_prefix = config.get("API").get("Download_File_Prefix") if prefix else ''
-        download_path = os.path.join(config.get("API").get("Download_Path"), f"{platform}_{data_type}")
+        download_path = config.get("API").get("Download_Path")
 
         # 确保目录存在/Ensure the directory exists
         os.makedirs(download_path, exist_ok=True)
 
         # 下载视频文件/Download video file
         if data_type == 'video':
-            file_name = f"{file_prefix}{platform}_{nickname}_{desc}.mp4" if not with_watermark else f"{file_prefix}{platform}_{aweme_id}_watermark.mp4"
+            file_name = f"{file_prefix}{platform}_{nickname}_{desc}.mp4" if not with_watermark else f"{file_prefix}{platform}_{nickname}_{desc}_watermark.mp4"
             url = data.get('video_data').get('nwm_video_url_HQ') if not with_watermark else data.get('video_data').get(
                 'wm_video_url_HQ')
             file_path = os.path.join(download_path, file_name)
