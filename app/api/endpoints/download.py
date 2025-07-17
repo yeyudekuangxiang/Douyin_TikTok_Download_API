@@ -45,12 +45,9 @@ async def file_stream(url: str, headers: dict = None):
         start = int(start)
         end = int(end) if end else start+1024 * 1024 * 20 -1
     headers["range"] = f"bytes={start}-{end}"
-    print(headers)
     async with httpx.AsyncClient() as client:
         # 启用流式请求
         response = await client.get(url, headers=headers)
-        print(response.status_code)
-        print(response.headers)
 # 4. 处理源服务器响应
         if response.status_code == 206:  # 部分内容
             content_range = response.headers.get("content-range")
@@ -95,13 +92,14 @@ async def download_stream(request: Request,
         message = "Download endpoint is disabled in the configuration file. | 配置文件中已禁用下载端点。"
         raise HTTPException(status_code=400,detail=message)
 
+    print(f"开始解析 {url}")
     # 开始解析数据/Start parsing data
     try:
         data = await HybridCrawler.hybrid_parsing_single_video(url, minimal=True)
     except Exception as e:
         code = 400
         raise HTTPException(status_code=400,detail=str(e))
-
+    print(f"开始下载{url}")
     # 开始下载文件/Start downloading files
     try:
         data_type = data.get('type')

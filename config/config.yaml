@@ -21,6 +21,8 @@ Web:
   Live2D_Enable: true
   Live2D_JS: https://fastly.jsdelivr.net/gh/TikHubIO/TikHub_live2d@latest/autoload.js
 
+Use_Dlna_Cmd: false
+
 # API
 API:
   # Network Configuration

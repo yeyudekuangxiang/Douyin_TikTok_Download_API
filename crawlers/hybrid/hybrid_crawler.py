@@ -36,8 +36,9 @@ import asyncio
 from crawlers.douyin.web.web_crawler import DouyinWebCrawler  # 导入抖音Web爬虫
 from crawlers.tiktok.web.web_crawler import TikTokWebCrawler  # 导入TikTok Web爬虫
 from crawlers.tiktok.app.app_crawler import TikTokAPPCrawler  # 导入TikTok App爬虫
-
-
+import time
+cahce_map = {}
+lastDelete = time.time()
 class HybridCrawler:
     def __init__(self):
         self.DouyinWebCrawler = DouyinWebCrawler()
@@ -45,6 +46,17 @@ class HybridCrawler:
         self.TikTokAPPCrawler = TikTokAPPCrawler()
 
     async def hybrid_parsing_single_video(self, url: str, minimal: bool = False):
+        global cahce_map
+        global lastDelete
+    
+        now = time.time()
+        if now-lastDelete>3600:
+            lastDelete = now
+            cahce_map = {}
+
+        if cahce_map.get(url) is not None:
+            print(f"从缓存中读取 {url}")
+            return cahce_map.get(url)
         # 解析抖音视频/Parse Douyin video
         if "douyin" in url:
             platform = "douyin"
@@ -67,6 +79,7 @@ class HybridCrawler:
             aweme_type = data.get("aweme_type")
         else:
             raise ValueError("hybrid_parsing_single_video: Cannot judge the video source from the URL.")
+
 
         # 检查是否需要返回最小数据/Check if minimal data is required
         if not minimal:
@@ -200,6 +213,8 @@ class HybridCrawler:
                 }
         # 更新数据/Update data
         result_data.update(api_data)
+        cahce_map[url] = result_data
+        print("设置缓存",url)
         return result_data
 
     async def main(self):

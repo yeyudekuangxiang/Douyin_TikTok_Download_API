@@ -107,16 +107,18 @@ def play_dlna(media_url):
     domain = config["Web"]["Domain"]
     port = config["API"]["Host_Port"]
     uuu = f"{domain}:{port}{media_url}"
-    result = subprocess.run(
-    ["dlna", "play","-d",dmrUrl,uuu],  # 命令参数列表（避免shell注入风险）
-    capture_output=True,  # 捕获输出
-    text=True,           # 返回字符串而非字节
-    check=True           # 检查返回码（非零时抛出异常）
-    )
-    print("输出:", result.stdout)
-    print("错误:", result.stderr)
-    print("返回码:", result.returncode)
-    # asyncio.run(player.play(dmrUrl, uuu))
+    if config["Use_Dlna_Cmd"] :
+        result = subprocess.run(
+        ["dlna", "play","-d",dmrUrl,uuu],  # 命令参数列表（避免shell注入风险）
+        capture_output=True,  # 捕获输出
+        text=True,           # 返回字符串而非字节
+        check=True           # 检查返回码（非零时抛出异常）
+        )
+        print("输出:", result.stdout)
+        print("错误:", result.stderr)
+        print("返回码:", result.returncode)
+    else:
+        asyncio.run(player.play(dmrUrl, uuu))
     print("播放完成")
 
 def parse_video():
