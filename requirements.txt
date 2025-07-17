@@ -38,3 +38,4 @@ gmssl==3.2.2
 tenacity~=9.0.0
 requests==2.27.1
 async_upnp_client==0.35.1
+dlna

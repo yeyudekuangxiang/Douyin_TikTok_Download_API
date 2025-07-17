@@ -10,14 +10,16 @@ from pywebio import start_server
 from urllib.parse import urlencode
 from pywebio.session import run_async
 import requests
+import subprocess
 
 from app.web.views.ViewsUtils import ViewsUtils
 
 from crawlers.hybrid.hybrid_crawler import HybridCrawler
-from crawlers.utils.dlna import Dlna
+from crawlers.utils.dlna import Dlna,DLNAPlayer
 
 HybridCrawler = HybridCrawler()
 Dlna = Dlna()
+player = DLNAPlayer()
 
 # 读取上级再上级目录的配置文件
 config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),'config', 'config.yaml')
@@ -98,13 +100,24 @@ def play_dlna(media_url):
     dlna_list = asyncio.run(Dlna.dlna_list())
     print(dlna_list)
     options_list = []
-    for item in dlna_list["Data"]:
-        options_list.append((item["name"], item["url"]))
+    if dlna_list["Data"] is not None:
+        for item in dlna_list["Data"]:
+            options_list.append((item["name"], item["url"]))
     dmrUrl = select("选择播放设备:", options=options_list)
     domain = config["Web"]["Domain"]
     port = config["API"]["Host_Port"]
     uuu = f"{domain}:{port}{media_url}"
-    asyncio.run(Dlna.play_dlna(dmrUrl,uuu))
+    result = subprocess.run(
+    ["dlna", "play","-d",dmrUrl,uuu],  # 命令参数列表（避免shell注入风险）
+    capture_output=True,  # 捕获输出
+    text=True,           # 返回字符串而非字节
+    check=True           # 检查返回码（非零时抛出异常）
+    )
+    print("输出:", result.stdout)
+    print("错误:", result.stderr)
+    print("返回码:", result.returncode)
+    # asyncio.run(player.play(dmrUrl, uuu))
+    print("播放完成")
 
 def parse_video():
     placeholder = ViewsUtils.t(

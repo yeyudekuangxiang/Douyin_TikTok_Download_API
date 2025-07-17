@@ -43,11 +43,14 @@ async def file_stream(url: str, headers: dict = None):
         range_ = range_header.split("=")[1]
         start, end = range_.split("-")
         start = int(start)
-        end = int(end) if end else start+1024 * 1024 * 5 -1
+        end = int(end) if end else start+1024 * 1024 * 20 -1
     headers["range"] = f"bytes={start}-{end}"
+    print(headers)
     async with httpx.AsyncClient() as client:
         # 启用流式请求
         response = await client.get(url, headers=headers)
+        print(response.status_code)
+        print(response.headers)
 # 4. 处理源服务器响应
         if response.status_code == 206:  # 部分内容
             content_range = response.headers.get("content-range")
