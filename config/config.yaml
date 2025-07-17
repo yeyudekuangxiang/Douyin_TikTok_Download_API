@@ -4,7 +4,7 @@ Web:
   PyWebIO_Enable: true    # Enable APP | 启用APP
 
   # APP Information
-  Domain: https://douyin.wtf    # Web domain | Web域名
+  Domain: http://nas.znil.cn   # Web domain | Web域名
 
   # APP Configuration
   PyWebIO_Theme: minty    # PyWebIO theme | PyWebIO主题

@@ -14,8 +14,10 @@ import requests
 from app.web.views.ViewsUtils import ViewsUtils
 
 from crawlers.hybrid.hybrid_crawler import HybridCrawler
+from crawlers.utils.dlna import Dlna
 
 HybridCrawler = HybridCrawler()
+Dlna = Dlna()
 
 # 读取上级再上级目录的配置文件
 config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),'config', 'config.yaml')
@@ -92,6 +94,17 @@ def download_file(url):
         popup('下载完成', content=put_text('文件已成功下载!'))
     else:
         popup('下载失败', content=put_text('发生错误，请重试!'))
+def play_dlna(media_url):
+    dlna_list = asyncio.run(Dlna.dlna_list())
+    print(dlna_list)
+    options_list = []
+    for item in dlna_list["Data"]:
+        options_list.append((item["name"], item["url"]))
+    dmrUrl = select("选择播放设备:", options=options_list)
+    domain = config["Web"]["Domain"]
+    port = config["API"]["Host_Port"]
+    uuu = f"{domain}:{port}{media_url}"
+    asyncio.run(Dlna.play_dlna(dmrUrl,uuu))
 
 def parse_video():
     placeholder = ViewsUtils.t(
@@ -125,6 +138,7 @@ def parse_video():
                                  'ServerChan is receiving your input link! (◍•ᴗ•◍)\nEfforts are being made, please wait a moment...'))
     # 结果页标题
     put_scope('result_title')
+   
     # 遍历链接列表
     for url in url_lists:
         # 链接编号
@@ -162,11 +176,12 @@ def parse_video():
                       new_window=True)]
 
         ]
+        
         # 如果是视频/If it's video
         if url_type == ViewsUtils.t('视频', 'Video'):
             # 添加视频信息
            # wm_video_url_HQ = data.get('video_data').get('wm_video_url_HQ')
-            # nwm_video_url_HQ = data.get('video_data').get('nwm_video_url_HQ')
+            nwm_video_url_HQ = data.get('video_data').get('nwm_video_url_HQ')
             # if wm_video_url_HQ and nwm_video_url_HQ:
              #    table_list.insert(4, [ViewsUtils.t('视频链接-水印', 'Video URL-Watermark'),
              #                          put_link(ViewsUtils.t('点击查看', 'Click to view'),
@@ -187,10 +202,13 @@ def parse_video():
                 "prefix": "false",
                 "with_watermark": "false"
             }
-            downUrl = f"/api/downloadserver?{urlencode(params)}"
-            
+            print(nwm_video_url_HQ)
+            downUrl1 = f"/api/stream?{urlencode(params)}"
+            downUrl2 = f"/api/downloadserver?{urlencode(params)}"
+            table_list.insert(7, [ViewsUtils.t('播放到dlna', 'Video Play-to-Server'),
+                                  put_button("点击选择播放设备", onclick=lambda: play_dlna(downUrl1))])
             table_list.insert(8, [ViewsUtils.t('下载到服务器', 'Video Download-to-Server'),
-                                  put_button("点击下载", onclick=lambda: download_file(downUrl)),
+                                  put_button("点击下载", onclick=lambda: download_file(downUrl2)),
                                   ])
             # 添加视频信息
             table_list.insert(0, [
